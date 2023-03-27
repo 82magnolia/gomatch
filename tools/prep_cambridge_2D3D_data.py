@@ -4,7 +4,7 @@ import os
 from os.path import expanduser
 from warnings import warn
 
-from colmap.read_write_model import read_model, qvec2rotmat
+from colmap_utils import read_model, qvec2rotmat
 import numpy as np
 from tqdm import tqdm
 
@@ -184,7 +184,12 @@ def process_scenes(args):
     # 3d point data
     pts3d_prefix = os.path.join(save_prefix, "scene_points3d")
     os.makedirs(pts3d_prefix, exist_ok=True)
-    np.save(os.path.join(pts3d_prefix, "all.npy"), pts3d_data)
+
+    split_key = ['kings', 'old', 'shop', 'stmarys']
+    for scene_name in pts3d_data.keys():
+        for s in split_key:
+            if s in scene_name.lower():
+                np.save(os.path.join(pts3d_prefix, f"{s}.npy"), {scene_name: pts3d_data[scene_name]})
 
     # scene file
     data_save_path = os.path.join(save_prefix, "cambridge_2d3d.npy")

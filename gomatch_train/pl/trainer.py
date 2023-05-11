@@ -18,7 +18,7 @@ class MatcherTrainer(pl.LightningModule):
             self.matcher = models.BPnPMatcher()
         else:
             self.matcher = vars(models)[config.matcher_class](
-                p3d_type=config.p3d_type,
+                feat_type=config.feat_type,
                 share_kp2d_enc=config.share_kp2d_enc,
                 att_layers=config.att_layers,
             )

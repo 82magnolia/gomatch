@@ -14,23 +14,28 @@ from ..utils.extract_matches import mutual_assignment
 class OTMatcher(nn.Module):
     def __init__(
         self,
-        p3d_type: str,
+        feat_type: str,
         kp_feat_dim: int = 128,
         share_kp2d_enc: bool = True,
         att_layers: Iterable[str] = ("self", "cross", "self"),
     ) -> None:
         super().__init__()
 
-        # 2D encoder
-        self.kp2d_enc = PointResNetEncoder(in_channel=2, feat_channel=kp_feat_dim)
+        if feat_type == 'sphere':
+            feat_dim = 3
+        elif feat_type == 'ldf':  # Sphere coordinates + line distance function values
+            feat_dim = 4
+        else:
+            raise NotImplementedError("Other feature types are not implemented")
 
-        # 3D encoder
-        p3d_dim = 3 if p3d_type == "coords" else 2
-        if share_kp2d_enc and p3d_dim == 2:
+        # 2D encoder
+        self.kp2d_enc = PointResNetEncoder(in_channel=feat_dim, feat_channel=kp_feat_dim)
+
+        if share_kp2d_enc:
             self.kp3d_enc = self.kp2d_enc
         else:
             self.kp3d_enc = PointResNetEncoder(
-                in_channel=p3d_dim, feat_channel=kp_feat_dim
+                in_channel=feat_dim, feat_channel=kp_feat_dim
             )
 
         # Initialize OT
@@ -118,7 +123,7 @@ class OTMatcher(nn.Module):
 class OTMatcherCls(nn.Module):
     def __init__(
         self,
-        p3d_type: str,
+        feat_type: str,
         kp_feat_dim: int = 128,
         share_kp2d_enc: bool = True,
         att_layers: Iterable[str] = ("self", "cross", "self"),
@@ -127,7 +132,7 @@ class OTMatcherCls(nn.Module):
 
         # OT feature matcher
         self.raw_matcher = OTMatcher(
-            p3d_type,
+            feat_type,
             kp_feat_dim=kp_feat_dim,
             share_kp2d_enc=share_kp2d_enc,
             att_layers=att_layers,
@@ -210,30 +215,11 @@ class OTMatcherCls(nn.Module):
         return scores_b, match_probs_b
 
 
-class GoMatchBVs(nn.Module):
-    def __init__(self) -> None:
+class GoMatchDirect(nn.Module):
+    def __init__(self, feat_type, share_kp2d_enc=True) -> None:
         super().__init__()
         self.matcher = OTMatcherCls(
-            p3d_type="bvs", share_kp2d_enc=True, att_layers=["self", "cross", "self"]
-        )
-
-    def forward(
-        self,
-        pts2d: torch.Tensor,
-        idx2d: torch.Tensor,
-        pts3d: torch.Tensor,
-        idx3d: torch.Tensor,
-    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
-        return self.matcher(pts2d, idx2d, pts3d, idx3d)
-
-
-class GoMatchCoords(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.matcher = OTMatcherCls(
-            p3d_type="coords",
-            share_kp2d_enc=False,
-            att_layers=["self", "cross", "self"],
+            feat_type=feat_type, share_kp2d_enc=share_kp2d_enc, att_layers=["self", "cross", "self"]
         )
 
     def forward(

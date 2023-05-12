@@ -12,6 +12,31 @@ from scipy.ndimage import map_coordinates, distance_transform_edt
 import matplotlib.pyplot as plt
 
 
+def show_keypoints(image, kpts, only_kpts=False):
+    # image is assumed to have shape (H, W, 3) and kpts is shape (N, 2)
+    vis_image = image.mean(-1).cpu().numpy()
+    H, W = vis_image.shape
+    vis_image = (vis_image * 255).astype(np.uint8)
+
+    if only_kpts:
+        out = np.zeros_like(vis_image)
+    else:
+        out = np.copy(vis_image)
+    kpts_x = kpts[:, 0].long().cpu().numpy()
+    kpts_y = kpts[:, 1].long().cpu().numpy()
+
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+
+    for x, y in zip(kpts_x, kpts_y):
+        cv2.circle(out, (x, y), 2, black, -1, lineType=cv2.LINE_AA)
+        cv2.circle(out, (x, y), 1, white, -1, lineType=cv2.LINE_AA)
+    
+    
+    plt.imshow(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
+    plt.show()
+
+
 def rgb_to_grayscale(
     image: torch.Tensor, rgb_weights: torch.Tensor = torch.tensor([0.299, 0.587, 0.114])
 ) -> torch.Tensor:

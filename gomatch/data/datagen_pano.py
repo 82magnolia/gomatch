@@ -9,7 +9,7 @@ import open3d as o3d
 import random
 import torch.nn.functional as F
 from scipy.ndimage import map_coordinates, distance_transform_edt
-import shutil
+import matplotlib.pyplot as plt
 
 
 def rgb_to_grayscale(
@@ -412,6 +412,9 @@ if __name__ == '__main__':
                 pose_file_list = [os.path.join(scene, 'pose', space, p) for p in os.listdir(os.path.join(scene, 'pose', space))]
                 pano_file_list = [os.path.join(scene, 'pano', space, p) for p in os.listdir(os.path.join(scene, 'pano', space)) \
                                   if '_black' not in p]
+                
+                pose_file_list = sorted(pose_file_list)
+                pano_file_list = sorted(pano_file_list)
 
                 # Collect pose annotations and generate bounding boxes from them
                 annotated_trans = []

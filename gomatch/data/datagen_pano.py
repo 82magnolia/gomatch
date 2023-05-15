@@ -10,6 +10,7 @@ import random
 import torch.nn.functional as F
 from scipy.ndimage import map_coordinates, distance_transform_edt
 import matplotlib.pyplot as plt
+from gomatch.utils.extract_matches import align_points2d
 
 
 def show_keypoints(image, kpts, only_kpts=False):
@@ -33,6 +34,61 @@ def show_keypoints(image, kpts, only_kpts=False):
         cv2.circle(out, (x, y), 1, white, -1, lineType=cv2.LINE_AA)
     
     
+    plt.imshow(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
+    plt.show()
+
+
+def show_matches(image0, image1, kpts_sphere0, kpts_sphere1, kpts_ij0, kpts_ij1, show_keypoints=True, thres=0.1, margin=10):
+    # image is assumed to have shape (H, W, 3) and kpts is shape (N, 2)
+    vis_image0 = image0.mean(-1).cpu().numpy()
+    H0, W0 = vis_image0.shape
+    vis_image0 = (vis_image0 * 255).astype(np.uint8)
+
+    vis_image1 = image1.mean(-1).cpu().numpy()
+    H1, W1 = vis_image1.shape
+    vis_image1 = (vis_image1 * 255).astype(np.uint8)
+
+    H, W = max(H0, H1), W0 + W1 + margin
+
+    out = 255 * np.ones((H, W), np.uint8)
+    out[:H0, :W0] = vis_image0
+    out[:H1, W0+margin:] = vis_image1
+    out = np.stack([out] * 3, -1)
+    
+    kpts_x0 = kpts_ij0[:, 0].long().cpu().numpy()
+    kpts_y0 = kpts_ij0[:, 1].long().cpu().numpy()
+    kpts_x1 = kpts_ij1[:, 0].long().cpu().numpy()
+    kpts_y1 = kpts_ij1[:, 1].long().cpu().numpy()
+
+    if show_keypoints:
+        white = (255, 255, 255)
+        black = (0, 0, 0)
+        for x, y in zip(kpts_x0, kpts_y0):
+            cv2.circle(out, (x, y), 2, black, -1, lineType=cv2.LINE_AA)
+            cv2.circle(out, (x, y), 1, white, -1, lineType=cv2.LINE_AA)
+        for x, y in zip(kpts_x1, kpts_y1):
+            cv2.circle(out, (x + margin + W0, y), 2, black, -1,
+                       lineType=cv2.LINE_AA)
+            cv2.circle(out, (x + margin + W0, y), 1, white, -1,
+                       lineType=cv2.LINE_AA)
+
+    sphere_match = align_points2d(kpts_sphere0.cpu().numpy(), kpts_sphere1.cpu().numpy(), thres)
+    i2ds, i3ds = sphere_match[:, 0], sphere_match[:, 1]
+
+    mkpts_x0 = kpts_x0[i2ds]
+    mkpts_y0 = kpts_y0[i2ds]
+    mkpts_x1 = kpts_x1[i3ds]
+    mkpts_y1 = kpts_y1[i3ds]
+
+    c = (0, 255, 0)
+    for idx, (x0, y0, x1, y1) in enumerate(zip(mkpts_x0, mkpts_y0, mkpts_x1, mkpts_y1)):
+        cv2.line(out, (x0, y0), (x1 + margin + W0, y1),
+            color=c, thickness=1, lineType=cv2.LINE_AA)
+
+        cv2.circle(out, (x0, y0), 2, c, -1, lineType=cv2.LINE_AA)
+        cv2.circle(out, (x1 + margin + W0, y1), 2, c, -1,
+            lineType=cv2.LINE_AA)
+
     plt.imshow(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
     plt.show()
 
@@ -393,6 +449,7 @@ if __name__ == '__main__':
     parser.add_argument("--rot_bound", help="Size of rotation bound for generating pairs as (size_yaw, size_pitch, size_roll)", default=[30, 15, 10])
     parser.add_argument("--num_trans", help="Number of translation poses to spawn per x and y", default=10)
     parser.add_argument("--num_pairs", help="Number of reference pose pairs to generate per translation location", default=1)
+    parser.add_argument("--vis_match", help="Visualize matches for debugging", action='store_true')
     args = parser.parse_args()
 
     detector_config = {
@@ -523,6 +580,12 @@ if __name__ == '__main__':
                             new_pano_kpts_sphere = new_pano_kpts_sphere[new_valid_mask]
                             new_pano_kpts_ij = new_pano_kpts_ij[new_valid_mask]
 
+                            # Optionally visualize
+                            if args.vis_match:
+                                new_pano_kpts_3d_trans = (new_pano_kpts_3d - trans_tensor) @ rot_tensor.T
+                                new_pano_kpts_3d_proj = new_pano_kpts_3d_trans / new_pano_kpts_3d_trans.norm(dim=-1, keepdim=True)
+                                show_matches(pano, new_pano, pano_kpts_sphere, new_pano_kpts_3d_proj, pano_kpts_ij, new_pano_kpts_ij)
+
                             # Check validity of far range keypoints
                             if valid_mask.sum() < min_kpts or new_valid_mask.sum() < min_kpts:
                                 global_id -= 1
@@ -630,6 +693,12 @@ if __name__ == '__main__':
                             new_pano_kpts_3d = new_kpts_xyz[new_valid_mask]
                             new_pano_kpts_sphere = new_pano_kpts_sphere[new_valid_mask]
                             new_pano_kpts_ij = new_pano_kpts_ij[new_valid_mask]
+
+                            # Optionally visualize
+                            if args.vis_match:
+                                new_pano_kpts_3d_trans = (new_pano_kpts_3d - trans_tensor) @ rot_tensor.T
+                                new_pano_kpts_3d_proj = new_pano_kpts_3d_trans / new_pano_kpts_3d_trans.norm(dim=-1, keepdim=True)
+                                show_matches(pano, new_pano, pano_kpts_sphere, new_pano_kpts_3d_proj, pano_kpts_ij, new_pano_kpts_ij)
 
                             # Check validity of far range keypoints
                             if valid_mask.sum() < min_kpts or new_valid_mask.sum() < min_kpts:

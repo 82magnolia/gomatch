@@ -90,17 +90,17 @@ def reprojection_err_normalized(
 
 def reprojection_err(
     matches_est: torch.Tensor,
-    pts2d_pix: torch.Tensor,
+    pts2d: torch.Tensor,
     pts3d: torch.Tensor,
-    K: TensorOrArray,
     R_gt: TensorOrArray,
     t_gt: TensorOrArray,
 ) -> torch.Tensor:
     i3d, i2d = torch.where(matches_est)
 
     # Meaure reprojection err on image coordinates
-    kps2d_proj, _ = project_points3d(K, R_gt, t_gt, pts3d[i3d])
-    match_dists = (pts2d_pix[i2d] - pts2d_pix.new_tensor(kps2d_proj)).norm(dim=1)
+    kps2d_trans = (pts3d[i3d] - t_gt.unsqueeze(0)) @ R_gt.T
+    kps2d_proj = kps2d_trans / kps2d_trans.norm(dim=-1, keepdim=True)
+    match_dists = (pts2d[i2d] - pts2d.new_tensor(kps2d_proj)).norm(dim=1)
     return match_dists
 
 
@@ -149,7 +149,6 @@ def compute_metrics_sample(
     pts3d: torch.Tensor,
     R_gt: TensorOrArray,
     t_gt: TensorOrArray,
-    K: torch.Tensor,
     ransac_thres: float = 0.001,
     is_test: bool = False,
     print_out: bool = True,
@@ -188,7 +187,7 @@ def compute_metrics_sample(
     if pose_res:
         # Reproject gt 3D points with estimated pose
         reproj_errs = (
-            reprojection_err(matches_gt_, pts2d_pix, pts3d, K, R, t).cpu().data.numpy()
+            reprojection_err(matches_gt_, pts2d, pts3d, R, t).cpu().data.numpy()
         )
     else:
         reproj_errs = np.empty(0)
@@ -256,7 +255,6 @@ def compute_metrics_batch(
         pts3d = data["pts3d"][mask3d]
         R_gt = data["R"][bid]
         t_gt = data["t"][bid]
-        K = data["K"][bid]
 
         compute_metrics_sample(
             metrics,
@@ -267,7 +265,6 @@ def compute_metrics_batch(
             pts3d,
             R_gt,
             t_gt,
-            K,
             ransac_thres=ransac_thres,
             iterations_count=iterations_count,
             confidence=confidence,

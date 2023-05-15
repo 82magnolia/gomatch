@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Union
 
 from cv2 import SOLVEPNP_AP3P, Rodrigues, solvePnPRansac, solvePnPRefineLM
+import cv2
 import numpy as np
 from torch import Tensor
 
@@ -161,36 +162,40 @@ def points2d_to_bearing_vector(
 
 
 def estimate_pose(
-    pts2d_bvs: TensorOrArray,
+    pts2d: TensorOrArray,
     pts3d: TensorOrArray,
-    ransac_thres: float = 0.001,
+    ransac_thres: float = 0.5,
     iterations_count: int = 1000,
     confidence: float = 0.99,
 ) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
-    if isinstance(pts2d_bvs, Tensor):
-        pts2d_bvs = pts2d_bvs.cpu().data.numpy()
+    if isinstance(pts2d, Tensor):
+        pts2d = pts2d.cpu().data.numpy()
     if isinstance(pts3d, Tensor):
         pts3d = pts3d.cpu().data.numpy()
 
-    if len(pts2d_bvs) < 4:
+    if len(pts2d) < 4:
         return None
 
     # Ensure sanitized input for OpenCV
-    assert isinstance(pts2d_bvs, np.ndarray)
+    assert isinstance(pts2d, np.ndarray)
     assert isinstance(pts3d, np.ndarray)
-    pts2d_bvs = pts2d_bvs.astype(np.float64)
+    pts2d = pts2d.astype(np.float64)
     pts3d = pts3d.astype(np.float64)
+
+    x = pts3d
+    y = pts2d
+    y /= y[..., -1:]
+    y = y[..., :2]
 
     # ransac p3p
     success, rvec, tvec, inliers = solvePnPRansac(
-        pts3d,
-        pts2d_bvs,
+        x,
+        y,
         cameraMatrix=np.eye(3),
         distCoeffs=None,
         iterationsCount=iterations_count,
         reprojectionError=ransac_thres,
-        confidence=confidence,
-        flags=SOLVEPNP_AP3P,
+        flags=cv2.SOLVEPNP_ITERATIVE
     )
 
     # there are situations where tvec is nan but the solver reports success
@@ -199,13 +204,14 @@ def estimate_pose(
 
     # refinement with just inliers
     inliers = inliers.ravel()
-    rvec, tvec = solvePnPRefineLM(
-        pts3d[inliers],
-        pts2d_bvs[inliers],
+    rvec, tvec = solvePnPRansac(
+        x[inliers],
+        y[inliers],
         cameraMatrix=np.eye(3),
         distCoeffs=None,
-        rvec=rvec,
-        tvec=tvec,
+        iterationsCount=iterations_count,
+        reprojectionError=ransac_thres / 5,
+        flags=cv2.SOLVEPNP_ITERATIVE
     )
     R = Rodrigues(rvec)[0]
     t = tvec.ravel()

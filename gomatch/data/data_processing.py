@@ -31,10 +31,6 @@ _logger = get_logger(level="INFO", name="data_process")
 
 def load_scene_data(
     data_file: PathT,
-    scenes: Collection[str],
-    scene3d_file: PathT,
-    feature_dir: PathT,
-    load_desc: bool = False,
 ) -> Tuple[List, List, Dict[str, Any], Dict[str, Any]]:
     _logger.info(f"Loading data file from {data_file}")
     data_dict = np.load(data_file, allow_pickle=True).item()
@@ -198,46 +194,31 @@ def extract_covis_pts3d_ids(
 def align_2d3d_points_normalized(
     pts2d: np.ndarray,
     pts3d_proj: np.ndarray,
-    K: np.ndarray,
-    dist_thres: Optional[float],
-    radial: Optional[float] = None,
+    dist_thres: Optional[float]
 ) -> np.ndarray:
     # Convert pts2d to normalized coordinates
-    pts2d_normed = points2d_to_bearing_vector(pts2d, K, vec_dim=2, radial=radial)
-    pts3d_proj_normed = points2d_to_bearing_vector(
-        pts3d_proj, K, vec_dim=2, radial=radial
-    )
-    aligned_ids = align_points2d(pts2d_normed, pts3d_proj_normed, dist_thres=dist_thres)
+    aligned_ids = align_points2d(pts2d, pts3d_proj, dist_thres=dist_thres)
     return aligned_ids
 
 
 def compute_gt_2d3d_match(
-    pts2d: np.ndarray,
-    pts3d: TensorOrArrayOrList,
-    K: np.ndarray,
-    R: TensorOrArrayOrList,
-    t: TensorOrArrayOrList,
+    orig_sphere: np.ndarray,
+    new_3d: np.ndarray,
+    orig_R: TensorOrArrayOrList,
+    orig_T: TensorOrArrayOrList,
     inls_thres: Optional[float] = 1,
-    normalize: bool = False,
-    radial: Optional[float] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
     # Project 3d keypoints onto image plane
-    pts2d_proj, valid = project_points3d(K, R, t, pts3d, radial=radial)
+    new_3d_transform = (new_3d - orig_T[None, ...]) @ orig_R.T
+    new_3d_proj = new_3d_transform / np.linalg.norm(new_3d_transform, axis=-1, keepdims=True)
 
     # Align 2d points with 3d projections
-    if normalize:
-        # NN matching based on normalized distances
-        matches = align_2d3d_points_normalized(
-            pts2d, pts2d_proj[valid], K, dist_thres=inls_thres, radial=radial
-        )
-    else:
-        # NN matching based on image pixel distances
-        matches = align_points2d(pts2d, pts2d_proj[valid], dist_thres=inls_thres)
-    i3d_map = np.where(valid)[0]
-    i2ds, i3ds = matches[:, 0], i3d_map[matches[:, 1]]
+    matches = align_2d3d_points_normalized(orig_sphere, new_3d_proj, dist_thres=inls_thres)
+    i2ds, i3ds = matches[:, 0], matches[:, 1]
 
     # Everything not inliers as outliers
-    n2d, n3d = len(pts2d), len(valid)
+    n2d, n3d = len(orig_sphere), len(new_3d)
     inls_mask2d = np.zeros(n2d, dtype=bool)
     inls_mask2d[i2ds] = True
     inls_mask3d = np.zeros(n3d, dtype=bool)

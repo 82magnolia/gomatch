@@ -13,7 +13,7 @@ def compute_loss(
     preds: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
     opt_inliers_only: bool = False,
     cls: bool = False,
-    rpthres: float = 1,
+    rpthres: float = 0.1,
 ) -> Dict[str, torch.Tensor]:
     # preds: ot_scores, *match_probs_b
     bids = torch.unique_consecutive(data["idx2d"])
@@ -46,7 +46,6 @@ def compute_loss(
         # Classification loss
         if cls:
             device = loss.device
-            K = data["K"][bid]
             R_gt = data["R"][bid]
             t_gt = data["t"][bid]
             pts2d = data["pts2d"][mask2d].to(device)
@@ -54,8 +53,9 @@ def compute_loss(
 
             # Compute reprojection err
             i3d, i2d = torch.where(match_probs_b[bid][:-1, :-1] > -1)
-            kps3d, kps2d = pts3d[i3d], pts2d[i2d, :2]
-            kps2d_proj = project3d_normalized(R_gt, t_gt, kps3d)
+            kps3d, kps2d = pts3d[i3d], pts2d[i2d]
+            kps2d_transform = (kps3d - t_gt.unsqueeze(0)) @ R_gt.T
+            kps2d_proj = kps2d_transform / kps2d_transform.norm(dim=-1, keepdim=True)
             reproj_err = (kps2d - kps2d.new_tensor(kps2d_proj)).norm(dim=1)
 
             # Balanced BCE loss

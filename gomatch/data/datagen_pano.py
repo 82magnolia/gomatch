@@ -409,6 +409,7 @@ if __name__ == '__main__':
         raise FileExistsError("Directory already exists")
     
     global_id = -1
+    min_kpts = 10
 
     if args.dataset == 'mp3d':
         scene_list = [os.path.join(args.data_root, d) for d in os.listdir(args.data_root) if os.path.isdir(os.path.join(args.data_root, d))]
@@ -435,8 +436,7 @@ if __name__ == '__main__':
                 rgb = torch.from_numpy(rgb_np).to(device)
 
                 pose_file_list = [os.path.join(scene, 'pose', space, p) for p in os.listdir(os.path.join(scene, 'pose', space))]
-                pano_file_list = [os.path.join(scene, 'pano', space, p) for p in os.listdir(os.path.join(scene, 'pano', space)) \
-                                  if '_black' not in p]
+                pano_file_list = [p.replace('txt', 'jpg').replace('/pose', '/pano') for p in pose_file_list]
                 
                 pose_file_list = sorted(pose_file_list)
                 pano_file_list = sorted(pano_file_list)
@@ -493,6 +493,11 @@ if __name__ == '__main__':
                             pano_kpts_ij = pano_pred['keypoints'][0]
                             new_pano_kpts_ij = new_pano_pred['keypoints'][0]
 
+                            # Check validity of keypoints
+                            if pano_kpts_ij.shape[0] < min_kpts or new_pano_kpts_ij.shape[0] < min_kpts:
+                                global_id -= 1
+                                continue
+
                             pano_kpts_sphere = ij2coord(torch.flip(pano_pred['keypoints'][0], [-1]), args.render_size)
                             new_pano_kpts_sphere = ij2coord(torch.flip(new_pano_pred['keypoints'][0], [-1]), args.render_size)
 
@@ -518,6 +523,10 @@ if __name__ == '__main__':
                             new_pano_kpts_sphere = new_pano_kpts_sphere[new_valid_mask]
                             new_pano_kpts_ij = new_pano_kpts_ij[new_valid_mask]
 
+                            # Check validity of far range keypoints
+                            if valid_mask.sum() < min_kpts or new_valid_mask.sum() < min_kpts:
+                                global_id -= 1
+                                continue
                         
                         data_orig = {'R': rot, 'T': trans, 'kpts_sphere': pano_kpts_sphere.cpu().numpy(),
                                     'kpts_ij': pano_kpts_ij.cpu().numpy(), 'kpts_3d': pano_kpts_3d.cpu().numpy()}
@@ -592,6 +601,11 @@ if __name__ == '__main__':
                             pano_kpts_ij = pano_pred['keypoints'][0]
                             new_pano_kpts_ij = new_pano_pred['keypoints'][0]
 
+                            # Check validity of keypoints
+                            if pano_kpts_ij.shape[0] < min_kpts or new_pano_kpts_ij.shape[0] < min_kpts:
+                                global_id -= 1
+                                continue
+
                             pano_kpts_sphere = ij2coord(torch.flip(pano_pred['keypoints'][0], [-1]), args.render_size)
                             new_pano_kpts_sphere = ij2coord(torch.flip(new_pano_pred['keypoints'][0], [-1]), args.render_size)
 
@@ -605,6 +619,8 @@ if __name__ == '__main__':
                             kpts_xyz = sample_from_img(coord_pano, pano_kpts_ij_sample, mode='nearest')
                             valid_mask = kpts_xyz.norm(dim=-1) > 0.1
                             pano_kpts_3d = kpts_xyz[valid_mask]
+                            pano_kpts_sphere = pano_kpts_sphere[valid_mask]
+                            pano_kpts_ij = pano_kpts_ij[valid_mask]
 
                             new_pano_kpts_ij_sample = new_pano_kpts_ij.clone()
                             new_pano_kpts_ij_sample[:, 0] = (new_pano_kpts_ij_sample[:, 0] - args.render_size[1] // 2) / (args.render_size[1] // 2)
@@ -612,7 +628,14 @@ if __name__ == '__main__':
                             new_kpts_xyz = sample_from_img(new_coord_pano, new_pano_kpts_ij_sample, mode='nearest')
                             new_valid_mask = new_kpts_xyz.norm(dim=-1) > 0.1
                             new_pano_kpts_3d = new_kpts_xyz[new_valid_mask]
-                        
+                            new_pano_kpts_sphere = new_pano_kpts_sphere[new_valid_mask]
+                            new_pano_kpts_ij = new_pano_kpts_ij[new_valid_mask]
+
+                            # Check validity of far range keypoints
+                            if valid_mask.sum() < min_kpts or new_valid_mask.sum() < min_kpts:
+                                global_id -= 1
+                                continue
+
                         data_orig = {'R': rot, 'T': trans, 'kpts_sphere': pano_kpts_sphere.cpu().numpy(),
                                     'kpts_ij': pano_kpts_ij.cpu().numpy(), 'kpts_3d': pano_kpts_3d.cpu().numpy()}
                         data_new = {'R': new_rot, 'T': new_trans, 'kpts_sphere': new_pano_kpts_sphere.cpu().numpy(),

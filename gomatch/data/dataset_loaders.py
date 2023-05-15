@@ -14,51 +14,35 @@ def collate(all_data: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     # Ignore samples with no pts
     data = []
     for d in all_data:
-        if len(d["pts2d"]) > 0:
+        if len(d["orig_sphere"]) > 0:
             data.append(d)
-    if len(data) == 0:
-        batched: Dict[str, Any] = dict(name=None)
-        return batched
 
     # Batch data contents
     batched = dict(
-        name=[d["name"] for d in data],
-        pts2d=torch.cat([torch.from_numpy(d["pts2d"]) for d in data]),
-        pts3d=torch.cat([torch.from_numpy(d["pts3d"]) for d in data]),
-        pts2d_pix=torch.cat([torch.from_numpy(d["pts2d_pix"]) for d in data]),
-        pts2dm=torch.cat([torch.from_numpy(d["pts2dm"]) for d in data]),
-        pts3dm=torch.cat([torch.from_numpy(d["pts3dm"]) for d in data]),
+        pts2d=torch.cat([torch.from_numpy(d["orig_sphere"]) for d in data]),
+        pts3d=torch.cat([torch.from_numpy(d["new_3d"]) for d in data]),
+        pts2d_pix=torch.cat([torch.from_numpy(d["orig_ij"]) for d in data]),
+        pts2dm=torch.cat([torch.from_numpy(d["orig_sphere"]) for d in data]),
+        pts3dm=torch.cat([torch.from_numpy(d["new_sphere"]) for d in data]),
         idx2d=torch.cat(
             [
-                torch.full((len(d["pts2d"]),), i, dtype=torch.long)
+                torch.full((len(d["orig_sphere"]),), i, dtype=torch.long)
                 for i, d in enumerate(data)
             ]
         ),
         idx3d=torch.cat(
             [
-                torch.full((len(d["pts3d"]),), i, dtype=torch.long)
+                torch.full((len(d["new_sphere"]),), i, dtype=torch.long)
                 for i, d in enumerate(data)
             ]
         ),
         matches_bin=torch.cat(
             [torch.from_numpy(d["matches_bin"]).view(-1) for d in data]
         ),
-        R=torch.stack([torch.from_numpy(d["R"]) for d in data]),
-        t=torch.stack([torch.from_numpy(d["t"]) for d in data]),
-        K=torch.stack([torch.from_numpy(d["K"]) for d in data]),
+        R=torch.stack([torch.from_numpy(d["new_R"]) for d in data]),
+        t=torch.stack([torch.from_numpy(d["new_T"]) for d in data]),
     )
 
-    # Special data for multi-covis evaluation
-    if "unmerge_mask" in data[0]:
-        batched["unmerge_mask"] = [d["unmerge_mask"] for d in data]
-        batched["idx3dm"] = torch.cat(
-            [
-                torch.full((len(d["pts3dm"]),), i, dtype=torch.long)
-                for i, d in enumerate(data)
-            ]
-        )
-    if "covis_ids" in data[0]:
-        batched["covis_ids"] = [d["covis_ids"] for d in data]
     return batched
 
 

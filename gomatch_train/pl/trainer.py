@@ -51,9 +51,6 @@ class MatcherTrainer(pl.LightningModule):
         return losses, metrics, raw_pose_errs
 
     def training_step(self, data, batch_idx):
-        if data["name"] is None:
-            return None
-
         # Compute loss and metrics
         losses, metrics, _ = self.compute_loss_and_metrics(data)
         loss = losses["loss"]
@@ -65,9 +62,6 @@ class MatcherTrainer(pl.LightningModule):
         return loss
 
     def validation_step(self, data, batch_idx):
-        if data["name"] is None:
-            return None
-
         # Compute loss and metrics
         losses, metrics, raw_pose_errs = self.compute_loss_and_metrics(data)
 
@@ -161,8 +155,8 @@ def train(args, exp_name):
     model = MatcherTrainer(args)
 
     # Initialize data loaders
-    train_loader = init_data_loader(args, split=args.train_split)
-    val_loader = init_data_loader(
-        args, split=args.val_split, outlier_rate=[0, 1], npts=[10, 1024]
+    train_loader = init_data_loader(args, split='train')
+    test_loader = init_data_loader(
+        args, split='test', outlier_rate=[0, 1], npts=[10, 1024]
     )
-    trainer.fit(model, train_loader, val_loader)
+    trainer.fit(model, train_loader, test_loader)

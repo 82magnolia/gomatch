@@ -36,10 +36,7 @@ def init_args():
     parser.add_argument("--dataset_conf", type=str, default="configs/datasets.yml")
     parser.add_argument("--train_split", type=str, default="train")
     parser.add_argument("--val_split", type=str, default="val")
-    parser.add_argument("--p2d_type", type=str, default="sift")
-    parser.add_argument(
-        "--p3d_type", choices=["coords", "bvs", "visdesc"], default="bvs"
-    )
+    parser.add_argument("--feat_type", type=str, default="sphere")
     parser.add_argument("--npts", type=int, nargs="*", default=[100, 1024])
     parser.add_argument("--outlier_rate", type=float, nargs="*", default=[0.5, 0.5])
     parser.add_argument("--topk", type=int, default=1)
@@ -62,7 +59,7 @@ def parse_data_tag(args):
     topk = f"top{args.topk}"
     if args.random_topk:
         topk += f"rd{topk}"
-    data_tag = f"or{orate}{topk}{args.p2d_type}_{args.p3d_type}{npts}{inls_thres}"
+    data_tag = f"or{orate}{topk}{args.feat_type}{npts}{inls_thres}"
     return data_tag
 
 

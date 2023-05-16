@@ -11,7 +11,6 @@ def init_args():
     parser.add_argument("--seed", type=int, default=93)
     parser.add_argument("--odir", "-o", type=str, default="outputs/train")
     parser.add_argument("--prefix", type=str, default="")
-    parser.add_argument("--overfit", type=int, default=None)
 
     # Training
     parser.add_argument("--batch", type=int, default=24)
@@ -32,7 +31,8 @@ def init_args():
     )
 
     # Dataset
-    parser.add_argument("--dataset", type=str, default="megadepth")
+    parser.add_argument("--dataset", type=str, default="mp3d")
+    parser.add_argument("--data_root", type=str, default="./data/matterport_kpts/")
     parser.add_argument("--dataset_conf", type=str, default="configs/datasets.yml")
     parser.add_argument("--train_split", type=str, default="train")
     parser.add_argument("--val_split", type=str, default="val")
@@ -42,6 +42,7 @@ def init_args():
     parser.add_argument("--topk", type=int, default=1)
     parser.add_argument("--random_topk", action="store_true")
     parser.add_argument("--inls2d_thres", type=float, default=1)
+    parser.add_argument("--overfit", action="store_true")
 
     # For training BPnPNet
     parser.add_argument("--opt_inliers_only", action="store_true")

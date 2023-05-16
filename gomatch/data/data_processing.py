@@ -275,6 +275,8 @@ def subsample_points_indices(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # Supsample data points to fulfil outlier rate and max points
     ni, no2d, no3d = len(i2ds), len(o2ds), len(o3ds)
+    if ni == 0 or no2d == 0 or no3d == 0:
+        import pdb; pdb.set_trace()
     ni_, no2d_, no3d_ = enforce_outlier_rate_and_npts(ni, no2d, no3d, orate, npts)
 
     # Sampling

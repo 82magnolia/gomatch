@@ -4,6 +4,8 @@ from .pl.trainer import train
 from .parse_args import *
 
 from gomatch.utils.logger import get_logger
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 
 logger = get_logger(level="INFO", name="train")
 

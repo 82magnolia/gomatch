@@ -98,7 +98,7 @@ def reprojection_err(
     i3d, i2d = torch.where(matches_est)
 
     # Meaure reprojection err on image coordinates
-    kps2d_trans = (pts3d[i3d] - t_gt.unsqueeze(0)) @ R_gt.T
+    kps2d_trans = (pts3d[i3d] - torch.from_numpy(t_gt).to(pts3d.device).unsqueeze(0)) @ torch.from_numpy(R_gt).to(pts3d.device).T
     kps2d_proj = kps2d_trans / kps2d_trans.norm(dim=-1, keepdim=True)
     match_dists = (pts2d[i2d] - pts2d.new_tensor(kps2d_proj)).norm(dim=1)
     return match_dists
@@ -149,7 +149,7 @@ def compute_metrics_sample(
     pts3d: torch.Tensor,
     R_gt: TensorOrArray,
     t_gt: TensorOrArray,
-    ransac_thres: float = 0.001,
+    ransac_thres: float = 0.5,
     is_test: bool = False,
     print_out: bool = True,
     iterations_count: int = 1000,
@@ -167,7 +167,7 @@ def compute_metrics_sample(
     # Pose estimation
     i3d, i2d = torch.where(matches_est_)
     pose_res = estimate_pose(
-        pts2d[i2d, :2],
+        pts2d[i2d],
         pts3d[i3d],
         ransac_thres=ransac_thres,
         iterations_count=iterations_count,
@@ -213,7 +213,7 @@ def compute_metrics_batch(
     preds: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
     cls: bool = False,
     sc_thres: float = -1,
-    ransac_thres: float = 0.001,
+    ransac_thres: float = 0.5,
     iterations_count: int = 1000,
     confidence: float = 0.99,
     is_test: bool = False,

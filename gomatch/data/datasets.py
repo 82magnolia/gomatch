@@ -19,10 +19,11 @@ class BaseDataset(data.Dataset):
         data_root="data/matterport_kpts",
         dataset="mp3d",
         feat_type="sphere",
-        npts=[10, 1024],
+        npts=[100, 1024],
         outlier_rate=[0, 1],
         inls2d_thres=0.1,
         normalized_thres=True,
+        overfit=False
     )
 
     def __init__(
@@ -48,11 +49,12 @@ class BaseDataset(data.Dataset):
         for scene in self.scenes:
             self.rooms += sorted(glob(os.path.join(scene, '*')))
         
-        train_size = int(len(self.rooms) * 0.9)
-        if split == 'train':
-            self.rooms = self.rooms[:train_size]
-        else:
-            self.rooms = self.rooms[train_size:]
+        if not config.overfit:
+            train_size = int(len(self.rooms) * 0.9)
+            if split == 'train':
+                self.rooms = self.rooms[:train_size]
+            else:
+                self.rooms = self.rooms[train_size:]
         
         self.view_pairs = []
         for room in self.rooms:
@@ -105,7 +107,7 @@ class BaseDataset(data.Dataset):
             inls_thres=self.inls2d_thres
         )
 
-        if self.outlier_rate == [0, 1]:
+        if self.outlier_rate == [0, 1] or len(new_sphere) < self.npts[0] or len(new_sphere) > self.npts[1]:
             # Generate assignment mask
             n2d, n3d = len(orig_sphere), len(new_3d)
             matches_bin = np.zeros((n3d + 1, n2d + 1), dtype=bool)

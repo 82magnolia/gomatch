@@ -39,8 +39,8 @@ def collate(all_data: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
         matches_bin=torch.cat(
             [torch.from_numpy(d["matches_bin"]).view(-1) for d in data]
         ),
-        R=torch.stack([torch.from_numpy(d["new_R"]) for d in data]),
-        t=torch.stack([torch.from_numpy(d["new_T"]) for d in data]),
+        R=torch.stack([torch.from_numpy(d["orig_R"]) for d in data]),
+        t=torch.stack([torch.from_numpy(d["orig_T"]) for d in data]),
     )
 
     return batched

@@ -204,7 +204,7 @@ def estimate_pose(
 
     # refinement with just inliers
     inliers = inliers.ravel()
-    rvec, tvec = solvePnPRansac(
+    _, rvec, tvec, _ = solvePnPRansac(
         x[inliers],
         y[inliers],
         cameraMatrix=np.eye(3),
@@ -214,7 +214,7 @@ def estimate_pose(
         flags=cv2.SOLVEPNP_ITERATIVE
     )
     R = Rodrigues(rvec)[0]
-    t = tvec.ravel()
+    t = (-R.T @ tvec).ravel()
     return R, t, inliers
 
 

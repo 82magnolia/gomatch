@@ -48,11 +48,18 @@ class MatcherTrainer(pl.LightningModule):
         raw_pose_errs = compute_metrics_batch(
             metrics, data, preds, cls=self.cls, sc_thres=0.5
         )
-        return losses, metrics, raw_pose_errs
+        oracle_metrics = defaultdict(list)
+        oracle_pose_errs = compute_metrics_batch(
+            oracle_metrics, data, preds, cls=self.cls, sc_thres=0.5, oracle=True
+        )
+
+        return losses, metrics, raw_pose_errs, oracle_pose_errs
 
     def training_step(self, data, batch_idx):
         # Compute loss and metrics
-        losses, metrics, _ = self.compute_loss_and_metrics(data)
+        losses, metrics, raw_pose_errs, oracle_pose_errors = self.compute_loss_and_metrics(data)
+        print(raw_pose_errs['R_err'].median().item(), raw_pose_errs['t_err'].median().item())
+        print(oracle_pose_errors['R_err'].median().item(), oracle_pose_errors['t_err'].median().item())
         loss = losses["loss"]
 
         # Log metrics
@@ -63,8 +70,9 @@ class MatcherTrainer(pl.LightningModule):
 
     def validation_step(self, data, batch_idx):
         # Compute loss and metrics
-        losses, metrics, raw_pose_errs = self.compute_loss_and_metrics(data)
-
+        losses, metrics, raw_pose_errs, oracle_pose_errors = self.compute_loss_and_metrics(data)
+        print(raw_pose_errs['R_err'].median().item(), raw_pose_errs['t_err'].median().item())
+        print(oracle_pose_errors['R_err'].median().item(), oracle_pose_errors['t_err'].median().item())
         # Log metrics
         log_metrics = {f"val/{k}": v for k, v in metrics.items()}
         log_metrics.update({f"val/{k}": v for k, v in losses.items()})

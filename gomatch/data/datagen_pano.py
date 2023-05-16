@@ -498,6 +498,10 @@ if __name__ == '__main__':
                 pose_file_list = sorted(pose_file_list)
                 pano_file_list = sorted(pano_file_list)
 
+                # Skip saving data if empty
+                if len(pose_file_list) == 0 or len(pano_file_list) == 0:
+                    continue
+
                 # Collect pose annotations and generate bounding boxes from them
                 annotated_trans = []
                 annotated_rot = []

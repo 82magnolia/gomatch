@@ -58,6 +58,14 @@ def compute_loss(
             kps2d_proj = kps2d_transform / kps2d_transform.norm(dim=-1, keepdim=True)
             reproj_err = (kps2d - kps2d.new_tensor(kps2d_proj)).norm(dim=1)
 
+            """
+            # Temporary gt reprojection err
+            gt_i3d, gt_i2d = torch.where(matches_gt[:-1, :-1])
+            gt_kps3d, gt_kps2d = pts3d[gt_i3d], pts2d[gt_i2d]
+            gt_kps2d_transform = (gt_kps3d - t_gt.unsqueeze(0)) @ R_gt.T
+            gt_kps2d_proj = gt_kps2d_transform / gt_kps2d_transform.norm(dim=-1, keepdim=True)
+            gt_reproj_err = (gt_kps2d - gt_kps2d.new_tensor(gt_kps2d_proj)).norm(dim=1)
+            """
             # Balanced BCE loss
             cls_preds = match_probs_b[bid][i3d, i2d]
             pos_mask = (reproj_err < rpthres).float()

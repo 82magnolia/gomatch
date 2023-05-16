@@ -41,14 +41,14 @@ def init_args():
     parser.add_argument("--outlier_rate", type=float, nargs="*", default=[0.5, 0.5])
     parser.add_argument("--topk", type=int, default=1)
     parser.add_argument("--random_topk", action="store_true")
-    parser.add_argument("--inls2d_thres", type=float, default=1)
+    parser.add_argument("--inls2d_thres", type=float, default=0.05)
     parser.add_argument("--overfit", action="store_true")
 
     # For training BPnPNet
     parser.add_argument("--opt_inliers_only", action="store_true")
 
     # Cls gt reproj thresh
-    parser.add_argument("--rpthres", type=float, default=1)
+    parser.add_argument("--rpthres", type=float, default=0.05)
 
     return parser
 

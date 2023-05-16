@@ -106,8 +106,7 @@ class BaseDataset(data.Dataset):
             orig_T,
             inls_thres=self.inls2d_thres
         )
-
-        if self.outlier_rate == [0, 1] or len(new_sphere) < self.npts[0] or len(new_sphere) > self.npts[1]:
+        if self.outlier_rate == [0, 1] or len(new_sphere) < self.npts[0] or len(orig_sphere) < self.npts[0]:
             # Generate assignment mask
             n2d, n3d = len(orig_sphere), len(new_3d)
             matches_bin = np.zeros((n3d + 1, n2d + 1), dtype=bool)

@@ -45,7 +45,7 @@ setup(
         "pytorch-lightning",
         "scipy",
         "torch==1.7.1",
-        "torch-scatter==2.0.6",
+        "torch-scatter==2.0.7",
         "tqdm",
     ],
     extras_require=dict(

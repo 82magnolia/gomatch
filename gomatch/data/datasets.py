@@ -84,19 +84,20 @@ class BaseDataset(data.Dataset):
             orig_sphere = orig_sphere[orig_rids]
             orig_ij = orig_ij[orig_rids]
             orig_3d = orig_3d[orig_rids]
-        elif len(orig_sphere) < self.npts[0]:
+        
+        if len(orig_sphere) < self.npts[0] or len(new_sphere) < self.npts[0]:
             orig_sphere = np.empty([0, 3])
             orig_ij = np.empty([0, 2])
             orig_3d = np.empty([0, 3])
+            new_sphere = np.empty([0, 3])
+            new_ij = np.empty([0, 2])
+            new_3d = np.empty([0, 3])
+        
         if len(new_sphere) > self.npts[1]:
             new_rids = np.random.choice(len(new_sphere), self.npts[1], replace=False)
             new_sphere = new_sphere[new_rids]
             new_ij = new_ij[new_rids]
             new_3d = new_3d[new_rids]
-        elif len(new_sphere) < self.npts[0]:
-            new_sphere = np.empty([0, 3])
-            new_ij = np.empty([0, 2])
-            new_3d = np.empty([0, 3])
 
         # Compute pesudo ground truth for 2d 3d matching
         i2ds, i3ds, o2ds, o3ds = compute_gt_2d3d_match(

@@ -74,6 +74,12 @@ def init_data_loader(
         dataset, _ = torch.utils.data.random_split(
             dataset, [overfit, len(dataset) - overfit]
         )
+    
+    max_samples_per_epoch = config.max_samples_per_epoch[0] if is_training else config.max_samples_per_epoch[1]
+    if max_samples_per_epoch > -1 and len(dataset) > max_samples_per_epoch:
+        dataset, _ = torch.utils.data.random_split(
+            dataset, [max_samples_per_epoch, len(dataset) - max_samples_per_epoch]
+        )
 
     # Wrap data loader
     data_loader = DataLoader(

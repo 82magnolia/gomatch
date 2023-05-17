@@ -43,6 +43,7 @@ def init_args():
     parser.add_argument("--random_topk", action="store_true")
     parser.add_argument("--inls2d_thres", type=float, default=0.05)
     parser.add_argument("--overfit", action="store_true")
+    parser.add_argument("--max_samples_per_epoch", nargs="*", type=int, default=[-1, -1])
 
     # For training BPnPNet
     parser.add_argument("--opt_inliers_only", action="store_true")

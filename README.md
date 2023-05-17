@@ -23,6 +23,13 @@ conda create -n gomatch python=3.7
 conda install pytorch==1.7.1 cudatoolkit=10.2 -c pytorch
 pip install . --find-links https://data.pyg.org/whl/torch-1.7.1+cu102.html
 ```
+
+TL;DR (3090):
+```bash
+conda create -n gomatch python=3.7
+conda install pytorch==1.7.1 cudatoolkit=11.0 -c pytorch
+pip install . --find-links https://data.pyg.org/whl/torch-1.7.1+cu102.html
+```
 We also exported our conda environment in [conda_env_reproduce.yml](conda_env_reproduce.yml).
 
 The codebase is organized in a way that all code we considered that could be useful to other projects is bundled inside the `gomatch` top level directory. Whenever we mention installation, we are referring to the installation of this folder alongside the other packages in your python environment. The package includes the network architectures we tested, losses, metrics and the data loaders we used. It does NOT include the training and evaluation script. Those are not installed and need to be executed from the root folder of this project.
@@ -145,4 +152,15 @@ python -m gomatch_train.train_matcher --gpus 0 --batch 64 -lr 0.001 \
     --p2d_type 'sift' --p3d_type 'coords' \
     --inls2d_thres 0.001 --rpthres 0.01 --prefix 'bpnpnet' \
     -o 'outputs/eccv22' --num_workers 4
+```
+
+## Training (Sphere)
+For training GoMatch in panoramic settings, use the following command:
+```
+python -m gomatch_train.train_matcher --gpus 0 --batch 8 -lr 0.001 \
+    --max_epochs 100 --matcher_class 'OTMatcherCls' --share_kp2d_enc \
+    --dataset 'mp3d' --train_split 'train' --val_split 'val' \
+    --outlier_rate 0.5 0.5  --topk 1 --npts 100 1024 \
+    --feat_type 'sphere' --prefix 'sphere' \
+    -o 'outputs/eccv22' --num_workers 0 --data_root data/matterport_kpts
 ```

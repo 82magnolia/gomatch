@@ -65,7 +65,7 @@ class MatcherTrainer(pl.LightningModule):
         # Log metrics
         log_metrics = {f"train/{k}": v for k, v in metrics.items()}
         log_metrics.update({f"train/{k}": v for k, v in losses.items()})
-        self.log_dict(log_metrics, on_epoch=True)
+        self.log_dict(log_metrics, on_epoch=True, batch_size=data['idx2d'].max())
         return loss
 
     def validation_step(self, data, batch_idx):
@@ -76,7 +76,7 @@ class MatcherTrainer(pl.LightningModule):
         # Log metrics
         log_metrics = {f"val/{k}": v for k, v in metrics.items()}
         log_metrics.update({f"val/{k}": v for k, v in losses.items()})
-        self.log_dict(log_metrics)
+        self.log_dict(log_metrics, batch_size=data['idx2d'].max())
         return raw_pose_errs
 
     def validation_epoch_end(self, outputs) -> None:

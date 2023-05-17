@@ -28,7 +28,7 @@ TL;DR (3090):
 ```bash
 conda create -n gomatch python=3.7
 conda install pytorch==1.7.1 cudatoolkit=11.0 -c pytorch
-pip install . --find-links https://data.pyg.org/whl/torch-1.7.1+cu102.html
+pip install . --find-links https://data.pyg.org/whl/torch-1.7.1+cu110.html
 ```
 We also exported our conda environment in [conda_env_reproduce.yml](conda_env_reproduce.yml).
 

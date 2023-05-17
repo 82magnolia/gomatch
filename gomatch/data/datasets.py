@@ -132,6 +132,7 @@ class BaseDataset(data.Dataset):
 
         # Construct data
         data = dict(
+            valid=True,
             orig_sphere=orig_sphere.astype(np.float32),
             orig_3d=orig_3d.astype(np.float32),
             orig_ij=orig_ij.astype(np.float32),
@@ -149,10 +150,12 @@ class BaseDataset(data.Dataset):
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         view_pair = self.view_pairs[index]
-        view_pair = np.load(view_pair)
-
         # Generate kpts and labels for 2d-3d matching
-        data = self._construct_data(view_pair)
+        try:
+            view_pair = np.load(view_pair)
+            data = self._construct_data(view_pair)
+        except ValueError:
+            data = dict(valid=False)
         return data
 
     def __len__(self) -> int:

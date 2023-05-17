@@ -14,7 +14,7 @@ def collate(all_data: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     # Ignore samples with no pts
     data = []
     for d in all_data:
-        if len(d["orig_sphere"]) > 0:
+        if d['valid'] and len(d["orig_sphere"]) > 0:
             data.append(d)
 
     # Batch data contents

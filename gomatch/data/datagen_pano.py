@@ -38,7 +38,7 @@ def show_keypoints(image, kpts, only_kpts=False):
     plt.show()
 
 
-def show_matches(image0, image1, kpts_sphere0, kpts_sphere1, kpts_ij0, kpts_ij1, show_keypoints=True, thres=0.1, margin=10):
+def show_matches(image0, image1, kpts_sphere0, kpts_sphere1, kpts_ij0, kpts_ij1, show_keypoints=True, thres=0.05, margin=10):
     # image is assumed to have shape (H, W, 3) and kpts is shape (N, 2)
     vis_image0 = image0.mean(-1).cpu().numpy()
     H0, W0 = vis_image0.shape
